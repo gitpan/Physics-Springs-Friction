@@ -6,4 +6,5 @@ examples/example1.pl
 examples/example1.png
 lib/Physics/Springs/Friction.pm
 run.pl
+run2.pl
 test.pl

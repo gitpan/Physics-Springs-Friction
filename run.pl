@@ -6,44 +6,71 @@ use warnings;
 use lib 'lib';
 
 use Physics::Springs::Friction;
+use Math::Project3D::Plot;
+use Time::HiRes qw/time/;
 
 my $sim = Physics::Springs::Friction->new();
 
-my $p1 = $sim->add_particle(
-  x  => -2,  y  => -1.5, z  => 0,
-  vx => 0,  vy => 0.04,  vz => 0,
+my @p; # particles
+
+$p[0] = $sim->add_particle(
+  x  => -2,  y  => 0, z  => 0,
+  vx => 0,  vy => 0.00001,  vz => 0,
+  m  => 10000000000,  n  => 'Wall1',
+);
+
+$p[1] = $sim->add_particle(
+  x  => -1,  y  => 0, z  =>  0,
+  vx => 0,  vy => 0.10,  vz => -0.1,
   m  => 100,  n  => 'Particle1',
 );
 
-my $p2 = $sim->add_particle(
-  x  => 0,  y  => -1.5, z  =>  0,
-  vx => 0,  vy => 0.04,  vz => 0,
+$p[2] = $sim->add_particle(
+  x  => 0,  y  => 0, z  => 0,
+  vx => 0,  vy => -0.10,  vz => 0.1,
   m  => 100,  n  => 'Particle2',
 );
 
-$sim->add_spring(k => 5, p1 => $p1, p2 => $p2, l => 1 );
+$p[3] = $sim->add_particle(
+  x  => 1,  y  => 0, z  =>  0,
+  vx => 0,  vy => 0.00001,  vz => 0,
+  m  => 10000000000,  n  => 'Wall2',
+);
 
-$sim->add_friction('stokes', .05);
+# Springs
+$sim->add_spring(k => 8, p1 => $p[0], p2 => $p[1], l => 1 );
+$sim->add_spring(k => 8, p1 => $p[1], p2 => $p[2], l => 1 );
+$sim->add_spring(k => 8, p1 => $p[2], p2 => $p[3], l => 1 );
 
-my $iterations = 20000; # Make this >5000 to get a reasonable picture.
+# Friction-like forces
+$sim->add_friction('stokes', .0002);
 
-my @pos = ([],[],[],[],[],[]);
-foreach (1..$iterations) {
-   my $p_no = 0;
-   foreach my $p (@{ $sim->{p} }) {
-     push @{$pos[$p_no]}, [ $p->{x}, $p->{y}, $p->{z} ];
-     $p_no++;
-   }
-   $sim->iterate_step(0.02);
-}
+# Particle interaction forces
 
+# Simulation settings
 
+my $iterations          = 5000000;# Simulation length in iterations
+my $per_sim_step        = 10000;  # Drawing interval (~10000)
+my $time_diff_per_iter  = 0.00001;# "simulation accuracy"
+my $iterations_per_line = 200;    # "inverse drawing accuracy"
+my $snapshot_interval   = 10;      # Write image snapshot every n sim steps
+my $outfile_basename    = 'p';    # Basename of output file
+my $outfile_extension   = '.png'; # Extension of output file including '.'
+my $new_file            = 1;      # Write snapshots to new files (tXXX.png)?
+my $zoom                = 600;
 
-# Only plotting done below. Uncomment for a picture.
+my $simulation_steps = int( $iterations / $per_sim_step );
+my $cur_iter  = 0;
+my $snapshots = 1+ int($simulation_steps / $snapshot_interval);
+my $variable_filename_length = length($snapshots);
+my $snapshot_no = 0;
 
-use Math::Project3D::Plot;
+my @pos;
+push @pos, [] foreach @p;
 
+# Image/projection settings
 my $img = Imager->new(xsize=>1024,ysize=>768);
+
 my $proj = Math::Project3D->new(
    plane_basis_vector => [ 0, 0, 0 ],
    plane_direction1   => [ 0.371391, 0.928477, 0 ],
@@ -75,7 +102,7 @@ $img->flood_fill(x=>0,y=>0,color=>$background);
 my $plotter = Math::Project3D::Plot->new(
   image      => $img,
   projection => $proj,
-  scale      => 200,
+  scale      => $zoom,
 );
 
 $plotter->plot_axis( # x axis
@@ -96,19 +123,88 @@ $plotter->plot_axis( # z axis
   length => 100,
 );
 
-foreach (0..1) {
-   $plotter->plot_range(
-     color  => $color[$_],
-     params => [
-                 [$_],
-                 [0, $iterations-1, 5],
-               ],
-     type   => 'line',
-   );
+my @times;
+push @times, time();
 
+foreach my $sim_step (1..$simulation_steps) {
+	print "Simulation step $sim_step.\n";
+	foreach ($cur_iter..($cur_iter+$per_sim_step)) {
+	   print "Iteration $_.\n" unless $_ % 1000;
+	   my $p_no = 0;
+	   foreach my $p (@{ $sim->{p} }) {
+	     push @{$pos[$p_no++]}, [ $p->{x}, $p->{y}, $p->{z} ];
+	   }
+	   $sim->iterate_step($time_diff_per_iter);
+	}
+
+	foreach (0..$#pos) {
+	   $plotter->plot_range(
+	     color  => $color[$_ % @color],
+	     params => [
+	                 [$_],
+	                 [0, $per_sim_step-1, $iterations_per_line],
+	               ],
+	     type   => 'line',
+	   );
+	}
+	my @last = @pos;
+	@pos = ();
+	my $count = 0;
+	push @pos, [$last[$count++][-1]] foreach @p;
+	$cur_iter += $per_sim_step;
+
+	unless ($sim_step % $snapshot_interval) {
+		print "Writing snapshot $snapshot_no.\n";
+		my $filename = $outfile_basename . 
+				($new_file ?
+					sprintf(
+					"\%0${variable_filename_length}i",
+					$snapshot_no)
+					: ''
+				) .
+				$outfile_extension;
+		$img->write(file=>$filename) or
+        		die $img->errstr;
+		$snapshot_no++;
+	}
+	push @times, time();
 }
-   
-$img->write(file=>'t.png') or
-        die $img->errstr;
 
+{
+	print "Writing final snapshot ($snapshot_no).\n";
+	my $filename = $outfile_basename . 
+			($new_file ?
+				sprintf(
+				"\%0${variable_filename_length}i",
+				$snapshot_no)
+				: ''
+			) .
+			$outfile_extension;
+	$img->write(file=>$filename) or
+       		die $img->errstr;
+	$snapshot_no++;
+}
+
+{
+	@times = map $_-$times[0], @times;
+	$times[$_] = $times[$_] - $times[$_-1] for 1..$#times;
+	shift @times;
+
+	my $sum;
+	$sum += $_ for @times;
+	my $ave = $sum / @times;
+	print "A simulation step took in average $ave seconds.\n";
+	$ave = $sum / $iterations;
+	print "A simulation iteration took in average $ave seconds.\n";
+	printf "That's %.4f iterations per second.\n", ($ave==0?0:1/$ave);
+	print "(The above estimation is off by the amount of time it took\n";
+	print "to draw into the image and write the image snapshot.)\n";
+	print "The simulation steps took this many seconds each:\n";
+	while (@times % 3) {
+		push @times, 0;
+	}
+	for(my $i = 0; $i < @times; $i += 3) {
+		printf("$i: %.8f, %.8f, %.8f\n", @times[$i..$i+2]);
+	}
+}
 

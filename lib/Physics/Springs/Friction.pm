@@ -10,7 +10,7 @@ use base 'Physics::Springs';
 use constant FFORCES => '_PhSpringsFriction_friction_forces';
 use Sub::Assert;
 
-our $VERSION = '0.01';
+our $VERSION = '1.00';
 
 sub new {
 	my $proto = shift;
@@ -48,7 +48,9 @@ sub add_friction {
 sub {
 	my \$P = shift;
 	my \$M = shift;
+	my \$F = [0, 0, 0];
 	$impl
+	return \@\$F;
 }
 ENDIMPL
 			local $@;
@@ -96,24 +98,15 @@ sub iterate_step {
 						$vx**2 +
 						$vy**2 +
 						$vz**2
-					);
+				);
 				
 				next if $v == 0;
-				
-				my $m = $P->{m};
+
 				my $f = $magnitude * $v;
 
-				$P->{vx} -= $f * ($vx/$v) / $m;
-				$P->{vy} -= $f * ($vy/$v) / $m;
-				$P->{vz} -= $f * ($vz/$v) / $m;
-
-				$P->{vx} = 0 if $P->{vx} * $vx < 0;
-				$P->{vy} = 0 if $P->{vy} * $vy < 0;
-				$P->{vz} = 0 if $P->{vz} * $vz < 0;
-				
-				$P->{x} += $P->{vx} * $time_diff;
-				$P->{y} += $P->{vy} * $time_diff;
-				$P->{z} += $P->{vz} * $time_diff;
+				$P->{_fx} -= $f * ($vx/$v);
+				$P->{_fy} -= $f * ($vy/$v);
+				$P->{_fz} -= $f * ($vz/$v);
 			}
 		}
 		elsif ($func eq 'newton') {
@@ -132,29 +125,24 @@ sub iterate_step {
 				
 				next if $v == 0;
 				
-				my $m = $P->{m};
 				my $f = 0.5 * $magnitude * $v**2;
 
-				$P->{vx} -= $f * ($vx/$v) / $m;
-				$P->{vy} -= $f * ($vy/$v) / $m;
-				$P->{vz} -= $f * ($vz/$v) / $m;
-				
-				$P->{vx} = 0 if $P->{vx} * $vx < 0;
-				$P->{vy} = 0 if $P->{vy} * $vy < 0;
-				$P->{vz} = 0 if $P->{vz} * $vz < 0;
-
-				$P->{x} += $P->{vx} * $time_diff;
-				$P->{y} += $P->{vy} * $time_diff;
-				$P->{z} += $P->{vz} * $time_diff;
+				$P->{_fx} -= $f * ($vx/$v);
+				$P->{_fy} -= $f * ($vy/$v);
+				$P->{_fz} -= $f * ($vz/$v);
 			}
 		}
 		else {
 			foreach my $particle (@{$self->{p}}) {
-				$func->($particle, $magnitude);
+				my @this_f = $func->({%$particle}, $magnitude);
+				$particle->{_fx} += $this_f[0];
+				$particle->{_fy} += $this_f[1];
+				$particle->{_fz} += $this_f[2];
 			}
 		}
 	}
-	
+#	use Data::Dumper;
+#	print Dumper $self->{p};
 	$self->SUPER::iterate_step(@params);
 }
 	
@@ -178,7 +166,7 @@ Physics::Springs::Friction - Simulate Dynamics with Springs and Friction
 =head1 DESCRIPTION
 
 This module is intended as an add-on to the Physics::Springs (from version
-0.02) and Physics::Particles (from version 0.10) modules and may be used
+1.00) and Physics::Particles (from version 1.00) modules and may be used
 to simulate particle dynamics including spring-like forces between any two
 particles you specify and friction-like forces that are applied to the
 movement of all particles.
@@ -206,8 +194,12 @@ background in Physics. Same applies to the section 'On Newtonian Friction'.
 
 With one argument, you may choose what type of friction to apply. Valid
 first arguments are either 'stokes', 'newton', an anonymous subroutine, or
-an arbitrary string representing a piece of code that modifies a particle $P
-according to a friction-magnitude of $M.
+an arbitrary string representing a piece of code that uses a particle $P
+and a friction-magnitude $M to compute the force excerted on the particle.
+The force components are expected to be stored in an existing variable $F
+that contains an array reference to an array of [0, 0, 0]. In case of the
+anonymous subroutine, the subroutine is expected to return the three
+force components. This behaviour has changed in version 1.00.
 
 With two arguments, the second argument sets the friction-magnitude.
 
@@ -290,7 +282,7 @@ L<Physics::Particles>, L<Physics::Springs>
 L<Math::Project3D>, L<Math::Project3D::Plot> for a reasonably
 simple way to visualize your data.
 
-http://steffen-mueller.net for the current version of this module.
+http://steffen-mueller.net or CPAN for the current version of this module.
 
 =head1 AUTHOR
 

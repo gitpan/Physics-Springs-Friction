@@ -1,4 +1,4 @@
-Physics::Springs::Friction version 0.01
+Physics::Springs::Friction version 1.00
 =======================================
 
 Physics::Springs::Friction adds friction forces to particle simulations
@@ -8,6 +8,10 @@ This module adds functionality to the Physics::Springs and Physics::Particles
 modules. As with Physics::Springs, you use() Physics::Springs::Friction
 instead of the underlying module, but any functionality of the underlying
 modules (Physics::Particles, Physics::Springs) is retained.
+
+As of version 1.00, Physics::Springs::Friction is no longer compatible to
+versions earlier than 1.00. Furthermore, it is no longer compatible to
+versions below 1.00 of Physics::Springs and Physics::Particles.
 
 Current versions of this module may be found at http://steffen-mueller.net/
 or on CPAN.
@@ -25,8 +29,8 @@ DEPENDENCIES
 
 This module requires these other modules and libraries:
 
-  Physics::Springs (0.02 or later)
-  Physics::Particles (0.10 or later)
+  Physics::Springs (1.00 or later)
+  Physics::Particles (1.00 or later)
 
 COPYRIGHT AND LICENCE
 

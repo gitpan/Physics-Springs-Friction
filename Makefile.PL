@@ -5,8 +5,8 @@ WriteMakefile(
     'NAME'		=> 'Physics::Springs::Friction',
     'VERSION_FROM'	=> 'lib/Physics/Springs/Friction.pm', # finds $VERSION
     'PREREQ_PM'		=> {
-	Physics::Particles => 0.10,
-	Physics::Springs => 0.02,
+	Physics::Particles => 1.00,
+	Physics::Springs => 1.00,
 	Test::More => 0,
 	Data::Dumper => 0,
 	Sub::Assert => 0,	
