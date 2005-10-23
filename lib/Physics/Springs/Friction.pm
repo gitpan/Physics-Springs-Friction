@@ -10,7 +10,7 @@ use base 'Physics::Springs';
 use constant FFORCES => '_PhSpringsFriction_friction_forces';
 use Sub::Assert;
 
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 sub new {
 	my $proto = shift;
@@ -203,6 +203,11 @@ force components. This behaviour has changed in version 1.00.
 
 With two arguments, the second argument sets the friction-magnitude.
 
+=head2 iterate_step
+
+Iterates next simulation step. Please refer to the documentation of the
+super method to this in L<Physics::Particles>.
+
 =head2 On Friction
 
 Friction is one of the concepts that physicists hardly understand because
@@ -290,7 +295,7 @@ Steffen Mueller, E<lt>friction-module at steffen-mueller dot netE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2003 by Steffen Mueller
+Copyright 2003-2005 by Steffen Mueller
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself. 

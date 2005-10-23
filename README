@@ -1,4 +1,4 @@
-Physics::Springs::Friction version 1.00
+Physics::Springs::Friction version 1.01
 =======================================
 
 Physics::Springs::Friction adds friction forces to particle simulations
@@ -20,6 +20,20 @@ INSTALLATION
 
 To install this module type the following:
 
+   perl Build.PL
+   ./Build
+   ./Build test
+   ./Build install
+
+On platforms that don't support the "./" notation, that would be:
+
+   perl Build.PL
+   perl Build
+   perl Build test
+   perl Build install
+
+If you wish, you may use the old MakeMaker style instead:
+
    perl Makefile.PL
    make
    make test
@@ -34,7 +48,7 @@ This module requires these other modules and libraries:
 
 COPYRIGHT AND LICENCE
 
-Copyright (C) 2003 Steffen Mueller
+Copyright (C) 2003-2005 Steffen Mueller
 
 Author can be reached at friction-module at steffen-mueller dot net.
 

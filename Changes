@@ -1,6 +1,10 @@
 Revision history for Perl extension Physics::Springs::Friction.
 
-1.00  Mon Jul 7 00:30:30 2003
+1.01  Mon Oct 10 21:58:00 2005
+	- Distribution upgrade
+	- Now using Module::Build
+
+1.00  Mon Jul  7 00:30:30 2003
 	- More accuracy.
 	- Now requires v1.00 of Physics::Springs.
 
